@@ -1,29 +1,32 @@
-import type { FC } from '../../../lib/teact/teact';
+import type { FC } from "../../../lib/teact/teact";
 import React, {
-  memo, useEffect, useRef, useState,
-} from '../../../lib/teact/teact';
+  memo,
+  useEffect,
+  useRef,
+  useState,
+} from "../../../lib/teact/teact";
 
-import type { IAnchorPosition } from '../../../types';
-import { ApiMessageEntityTypes } from '../../../api/types';
+import type { IAnchorPosition } from "../../../types";
+import { ApiMessageEntityTypes } from "../../../api/types";
 
-import { EDITABLE_INPUT_ID } from '../../../config';
-import buildClassName from '../../../util/buildClassName';
-import captureEscKeyListener from '../../../util/captureEscKeyListener';
-import { ensureProtocol } from '../../../util/ensureProtocol';
-import getKeyFromEvent from '../../../util/getKeyFromEvent';
-import stopEvent from '../../../util/stopEvent';
-import { INPUT_CUSTOM_EMOJI_SELECTOR } from './helpers/customEmoji';
+import { EDITABLE_INPUT_ID } from "../../../config";
+import buildClassName from "../../../util/buildClassName";
+import captureEscKeyListener from "../../../util/captureEscKeyListener";
+import { ensureProtocol } from "../../../util/ensureProtocol";
+import getKeyFromEvent from "../../../util/getKeyFromEvent";
+import stopEvent from "../../../util/stopEvent";
+import { INPUT_CUSTOM_EMOJI_SELECTOR } from "./helpers/customEmoji";
 
-import useFlag from '../../../hooks/useFlag';
-import useLastCallback from '../../../hooks/useLastCallback';
-import useOldLang from '../../../hooks/useOldLang';
-import useShowTransitionDeprecated from '../../../hooks/useShowTransitionDeprecated';
-import useVirtualBackdrop from '../../../hooks/useVirtualBackdrop';
+import useFlag from "../../../hooks/useFlag";
+import useLastCallback from "../../../hooks/useLastCallback";
+import useOldLang from "../../../hooks/useOldLang";
+import useShowTransitionDeprecated from "../../../hooks/useShowTransitionDeprecated";
+import useVirtualBackdrop from "../../../hooks/useVirtualBackdrop";
 
-import Icon from '../../common/icons/Icon';
-import Button from '../../ui/Button';
+import Icon from "../../common/icons/Icon";
+import Button from "../../ui/Button";
 
-import './TextFormatter.scss';
+import "./TextFormatter.scss";
 
 export type OwnProps = {
   isOpen: boolean;
@@ -40,19 +43,21 @@ interface ISelectedTextFormats {
   strikethrough?: boolean;
   monospace?: boolean;
   spoiler?: boolean;
+  quote?: boolean;
 }
 
 const TEXT_FORMAT_BY_TAG_NAME: Record<string, keyof ISelectedTextFormats> = {
-  B: 'bold',
-  STRONG: 'bold',
-  I: 'italic',
-  EM: 'italic',
-  U: 'underline',
-  DEL: 'strikethrough',
-  CODE: 'monospace',
-  SPAN: 'spoiler',
+  B: "bold",
+  STRONG: "bold",
+  I: "italic",
+  EM: "italic",
+  U: "underline",
+  DEL: "strikethrough",
+  CODE: "monospace",
+  SPAN: "spoiler",
+  BLOCKQUOTE: "quote",
 };
-const fragmentEl = document.createElement('div');
+const fragmentEl = document.createElement("div");
 
 const TextFormatter: FC<OwnProps> = ({
   isOpen,
@@ -65,26 +70,26 @@ const TextFormatter: FC<OwnProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line no-null/no-null
   const linkUrlInputRef = useRef<HTMLInputElement>(null);
-  const { shouldRender, transitionClassNames } = useShowTransitionDeprecated(isOpen);
+  const { shouldRender, transitionClassNames } =
+    useShowTransitionDeprecated(isOpen);
   const [isLinkControlOpen, openLinkControl, closeLinkControl] = useFlag();
-  const [linkUrl, setLinkUrl] = useState('');
+  const [linkUrl, setLinkUrl] = useState("");
   const [isEditingLink, setIsEditingLink] = useState(false);
   const [inputClassName, setInputClassName] = useState<string | undefined>();
-  const [selectedTextFormats, setSelectedTextFormats] = useState<ISelectedTextFormats>({});
+  const [selectedTextFormats, setSelectedTextFormats] =
+    useState<ISelectedTextFormats>({});
 
-  useEffect(() => (isOpen ? captureEscKeyListener(onClose) : undefined), [isOpen, onClose]);
-  useVirtualBackdrop(
-    isOpen,
-    containerRef,
-    onClose,
-    true,
+  useEffect(
+    () => (isOpen ? captureEscKeyListener(onClose) : undefined),
+    [isOpen, onClose]
   );
+  useVirtualBackdrop(isOpen, containerRef, onClose, true);
 
   useEffect(() => {
     if (isLinkControlOpen) {
       linkUrlInputRef.current!.focus();
     } else {
-      setLinkUrl('');
+      setLinkUrl("");
       setIsEditingLink(false);
     }
   }, [isLinkControlOpen]);
@@ -142,7 +147,7 @@ const TextFormatter: FC<OwnProps> = ({
     fragmentEl.replaceChildren(selectedRange.cloneContents());
     if (shouldDropCustomEmoji) {
       fragmentEl.querySelectorAll(INPUT_CUSTOM_EMOJI_SELECTOR).forEach((el) => {
-        el.replaceWith(el.getAttribute('alt')!);
+        el.replaceWith(el.getAttribute("alt")!);
       });
     }
     return fragmentEl.innerHTML;
@@ -168,12 +173,12 @@ const TextFormatter: FC<OwnProps> = ({
       return;
     }
 
-    let className = '';
+    let className = "";
     if (scrollLeft < scrollWidth - offsetWidth) {
-      className = 'mask-right';
+      className = "mask-right";
     }
     if (scrollLeft > 0) {
-      className += ' mask-left';
+      className += " mask-left";
     }
 
     setInputClassName(className);
@@ -186,17 +191,24 @@ const TextFormatter: FC<OwnProps> = ({
 
   function getFormatButtonClassName(key: keyof ISelectedTextFormats) {
     if (selectedTextFormats[key]) {
-      return 'active';
+      return "active";
     }
 
-    if (key === 'monospace' || key === 'strikethrough') {
-      if (Object.keys(selectedTextFormats).some(
-        (fKey) => fKey !== key && Boolean(selectedTextFormats[fKey as keyof ISelectedTextFormats]),
-      )) {
-        return 'disabled';
+    if (key === "monospace" || key === "strikethrough") {
+      if (
+        Object.keys(selectedTextFormats).some(
+          (fKey) =>
+            fKey !== key &&
+            Boolean(selectedTextFormats[fKey as keyof ISelectedTextFormats])
+        )
+      ) {
+        return "disabled";
       }
-    } else if (selectedTextFormats.monospace || selectedTextFormats.strikethrough) {
-      return 'disabled';
+    } else if (
+      selectedTextFormats.monospace ||
+      selectedTextFormats.strikethrough
+    ) {
+      return "disabled";
     }
 
     return undefined;
@@ -206,10 +218,10 @@ const TextFormatter: FC<OwnProps> = ({
     if (selectedTextFormats.spoiler) {
       const element = getSelectedElement();
       if (
-        !selectedRange
-        || !element
-        || element.dataset.entityType !== ApiMessageEntityTypes.Spoiler
-        || !element.textContent
+        !selectedRange ||
+        !element ||
+        element.dataset.entityType !== ApiMessageEntityTypes.Spoiler ||
+        !element.textContent
       ) {
         return;
       }
@@ -225,7 +237,9 @@ const TextFormatter: FC<OwnProps> = ({
 
     const text = getSelectedText();
     document.execCommand(
-      'insertHTML', false, `<span class="spoiler" data-entity-type="${ApiMessageEntityTypes.Spoiler}">${text}</span>`,
+      "insertHTML",
+      false,
+      `<span class="spoiler" data-entity-type="${ApiMessageEntityTypes.Spoiler}">${text}</span>`
     );
     onClose();
   });
@@ -233,9 +247,12 @@ const TextFormatter: FC<OwnProps> = ({
   const handleBoldText = useLastCallback(() => {
     setSelectedTextFormats((selectedFormats) => {
       // Somehow re-applying 'bold' command to already bold text doesn't work
-      document.execCommand(selectedFormats.bold ? 'removeFormat' : 'bold');
+      document.execCommand(selectedFormats.bold ? "removeFormat" : "bold");
       Object.keys(selectedFormats).forEach((key) => {
-        if ((key === 'italic' || key === 'underline') && Boolean(selectedFormats[key])) {
+        if (
+          (key === "italic" || key === "underline") &&
+          Boolean(selectedFormats[key])
+        ) {
           document.execCommand(key);
         }
       });
@@ -249,7 +266,7 @@ const TextFormatter: FC<OwnProps> = ({
   });
 
   const handleItalicText = useLastCallback(() => {
-    document.execCommand('italic');
+    document.execCommand("italic");
     updateSelectedRange();
     setSelectedTextFormats((selectedFormats) => ({
       ...selectedFormats,
@@ -258,7 +275,7 @@ const TextFormatter: FC<OwnProps> = ({
   });
 
   const handleUnderlineText = useLastCallback(() => {
-    document.execCommand('underline');
+    document.execCommand("underline");
     updateSelectedRange();
     setSelectedTextFormats((selectedFormats) => ({
       ...selectedFormats,
@@ -270,10 +287,10 @@ const TextFormatter: FC<OwnProps> = ({
     if (selectedTextFormats.strikethrough) {
       const element = getSelectedElement();
       if (
-        !selectedRange
-        || !element
-        || element.tagName !== 'DEL'
-        || !element.textContent
+        !selectedRange ||
+        !element ||
+        element.tagName !== "DEL" ||
+        !element.textContent
       ) {
         return;
       }
@@ -288,7 +305,36 @@ const TextFormatter: FC<OwnProps> = ({
     }
 
     const text = getSelectedText();
-    document.execCommand('insertHTML', false, `<del>${text}</del>`);
+    document.execCommand("insertHTML", false, `<del>${text}</del>`);
+    onClose();
+  });
+  const handleQuoteText = useLastCallback(() => {
+    if (selectedTextFormats.quote) {
+      const element = getSelectedElement();
+      if (
+        !selectedRange ||
+        !element ||
+        element.tagName !== "BLOCKQUOTE" ||
+        !element.textContent
+      ) {
+        return;
+      }
+
+      element.replaceWith(element.textContent);
+      setSelectedTextFormats((selectedFormats) => ({
+        ...selectedFormats,
+        quote: false,
+      }));
+
+      return;
+    }
+
+    const text = getSelectedText();
+    document.execCommand(
+      "insertHTML",
+      false,
+      `<blockquote>${text}</blockquote>`
+    );
     onClose();
   });
 
@@ -296,10 +342,10 @@ const TextFormatter: FC<OwnProps> = ({
     if (selectedTextFormats.monospace) {
       const element = getSelectedElement();
       if (
-        !selectedRange
-        || !element
-        || element.tagName !== 'CODE'
-        || !element.textContent
+        !selectedRange ||
+        !element ||
+        element.tagName !== "CODE" ||
+        !element.textContent
       ) {
         return;
       }
@@ -314,16 +360,23 @@ const TextFormatter: FC<OwnProps> = ({
     }
 
     const text = getSelectedText(true);
-    document.execCommand('insertHTML', false, `<code class="text-entity-code" dir="auto">${text}</code>`);
+    document.execCommand(
+      "insertHTML",
+      false,
+      `<code class="text-entity-code" dir="auto">${text}</code>`
+    );
     onClose();
   });
 
   const handleLinkUrlConfirm = useLastCallback(() => {
-    const formattedLinkUrl = (ensureProtocol(linkUrl) || '').split('%').map(encodeURI).join('%');
+    const formattedLinkUrl = (ensureProtocol(linkUrl) || "")
+      .split("%")
+      .map(encodeURI)
+      .join("%");
 
     if (isEditingLink) {
       const element = getSelectedElement();
-      if (!element || element.tagName !== 'A') {
+      if (!element || element.tagName !== "A") {
         return;
       }
 
@@ -337,9 +390,9 @@ const TextFormatter: FC<OwnProps> = ({
     const text = getSelectedText(true);
     restoreSelection();
     document.execCommand(
-      'insertHTML',
+      "insertHTML",
       false,
-      `<a href=${formattedLinkUrl} class="text-entity-link" dir="auto">${text}</a>`,
+      `<a href=${formattedLinkUrl} class="text-entity-link" dir="auto">${text}</a>`
     );
     onClose();
   });
@@ -353,15 +406,12 @@ const TextFormatter: FC<OwnProps> = ({
       m: handleMonospaceText,
       s: handleStrikethroughText,
       p: handleSpoilerText,
+      q: handleQuoteText,
     };
 
     const handler = HANDLERS_BY_KEY[getKeyFromEvent(e)];
 
-    if (
-      e.altKey
-      || !(e.ctrlKey || e.metaKey)
-      || !handler
-    ) {
+    if (e.altKey || !(e.ctrlKey || e.metaKey) || !handler) {
       return;
     }
 
@@ -372,16 +422,16 @@ const TextFormatter: FC<OwnProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      document.addEventListener('keydown', handleKeyDown);
+      document.addEventListener("keydown", handleKeyDown);
     }
 
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, handleKeyDown]);
 
   const lang = useOldLang();
 
   function handleContainerKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
-    if (e.key === 'Enter' && isLinkControlOpen) {
+    if (e.key === "Enter" && isLinkControlOpen) {
       handleLinkUrlConfirm();
       e.preventDefault();
     }
@@ -392,19 +442,19 @@ const TextFormatter: FC<OwnProps> = ({
   }
 
   const className = buildClassName(
-    'TextFormatter',
+    "TextFormatter",
     transitionClassNames,
-    isLinkControlOpen && 'link-control-shown',
+    isLinkControlOpen && "link-control-shown"
   );
 
   const linkUrlConfirmClassName = buildClassName(
-    'TextFormatter-link-url-confirm',
-    Boolean(linkUrl.length) && 'shown',
+    "TextFormatter-link-url-confirm",
+    Boolean(linkUrl.length) && "shown"
   );
 
   const style = anchorPosition
     ? `left: ${anchorPosition.x}px; top: ${anchorPosition.y}px;--text-formatter-left: ${anchorPosition.x}px;`
-    : '';
+    : "";
 
   return (
     <div
@@ -419,7 +469,7 @@ const TextFormatter: FC<OwnProps> = ({
         <Button
           color="translucent"
           ariaLabel="Spoiler text"
-          className={getFormatButtonClassName('spoiler')}
+          className={getFormatButtonClassName("spoiler")}
           onClick={handleSpoilerText}
         >
           <Icon name="eye-closed" />
@@ -428,7 +478,7 @@ const TextFormatter: FC<OwnProps> = ({
         <Button
           color="translucent"
           ariaLabel="Bold text"
-          className={getFormatButtonClassName('bold')}
+          className={getFormatButtonClassName("bold")}
           onClick={handleBoldText}
         >
           <Icon name="bold" />
@@ -436,7 +486,7 @@ const TextFormatter: FC<OwnProps> = ({
         <Button
           color="translucent"
           ariaLabel="Italic text"
-          className={getFormatButtonClassName('italic')}
+          className={getFormatButtonClassName("italic")}
           onClick={handleItalicText}
         >
           <Icon name="italic" />
@@ -444,7 +494,7 @@ const TextFormatter: FC<OwnProps> = ({
         <Button
           color="translucent"
           ariaLabel="Underlined text"
-          className={getFormatButtonClassName('underline')}
+          className={getFormatButtonClassName("underline")}
           onClick={handleUnderlineText}
         >
           <Icon name="underlined" />
@@ -452,34 +502,53 @@ const TextFormatter: FC<OwnProps> = ({
         <Button
           color="translucent"
           ariaLabel="Strikethrough text"
-          className={getFormatButtonClassName('strikethrough')}
+          className={getFormatButtonClassName("strikethrough")}
           onClick={handleStrikethroughText}
         >
           <Icon name="strikethrough" />
         </Button>
         <Button
           color="translucent"
+          ariaLabel="Quote text"
+          className={getFormatButtonClassName("quote")}
+          onClick={handleQuoteText}
+        >
+          <Icon name="quote" />
+        </Button>
+        <Button
+          color="translucent"
           ariaLabel="Monospace text"
-          className={getFormatButtonClassName('monospace')}
+          className={getFormatButtonClassName("monospace")}
           onClick={handleMonospaceText}
         >
           <Icon name="monospace" />
         </Button>
         <div className="TextFormatter-divider" />
-        <Button color="translucent" ariaLabel={lang('TextFormat.AddLinkTitle')} onClick={openLinkControl}>
+        <Button
+          color="translucent"
+          ariaLabel={lang("TextFormat.AddLinkTitle")}
+          onClick={openLinkControl}
+        >
           <Icon name="link" />
         </Button>
       </div>
 
       <div className="TextFormatter-link-control">
         <div className="TextFormatter-buttons">
-          <Button color="translucent" ariaLabel={lang('Cancel')} onClick={closeLinkControl}>
+          <Button
+            color="translucent"
+            ariaLabel={lang("Cancel")}
+            onClick={closeLinkControl}
+          >
             <Icon name="arrow-left" />
           </Button>
           <div className="TextFormatter-divider" />
 
           <div
-            className={buildClassName('TextFormatter-link-url-input-wrapper', inputClassName)}
+            className={buildClassName(
+              "TextFormatter-link-url-input-wrapper",
+              inputClassName
+            )}
           >
             <input
               ref={linkUrlInputRef}
@@ -499,7 +568,7 @@ const TextFormatter: FC<OwnProps> = ({
             <div className="TextFormatter-divider" />
             <Button
               color="translucent"
-              ariaLabel={lang('Save')}
+              ariaLabel={lang("Save")}
               className="color-primary"
               onClick={handleLinkUrlConfirm}
             >
