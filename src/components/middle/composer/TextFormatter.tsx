@@ -308,6 +308,44 @@ const TextFormatter: FC<OwnProps> = ({
     document.execCommand("insertHTML", false, `<del>${text}</del>`);
     onClose();
   });
+
+  function isFullLineSelection(): boolean {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return false;
+
+    const range = selection.getRangeAt(0);
+    const commonAncestor = range.commonAncestorContainer;
+    const startNode = range.startContainer;
+    const endNode = range.endContainer;
+
+    // Ensure selection starts at line start and ends at line end
+    const startOffset = range.startOffset;
+    const endOffset = range.endOffset;
+
+    const startParent =
+      startNode.nodeType === Node.TEXT_NODE
+        ? startNode.parentElement
+        : (startNode as Element);
+    const endParent =
+      endNode.nodeType === Node.TEXT_NODE
+        ? endNode.parentElement
+        : (endNode as Element);
+
+    // Check if start is at beginning of text node
+    const isStartOfLine =
+      startOffset === 0 ||
+      (startNode.nodeType === Node.TEXT_NODE &&
+        startNode.textContent?.slice(0, startOffset).trim() === "");
+
+    // Check if end is at end of text node
+    const isEndOfLine =
+      endOffset === (endNode.textContent?.length || 0) ||
+      (endNode.nodeType === Node.TEXT_NODE &&
+        endNode.textContent?.slice(endOffset).trim() === "");
+
+    return isStartOfLine && isEndOfLine && startParent === endParent;
+  }
+
   const handleQuoteText = useLastCallback(() => {
     if (selectedTextFormats.quote) {
       const element = getSelectedElement();
@@ -330,11 +368,13 @@ const TextFormatter: FC<OwnProps> = ({
     }
 
     const text = getSelectedText();
+    const isFullLine = isFullLineSelection();
     document.execCommand(
       "insertHTML",
       false,
-      `<blockquote>${text}</blockquote>`
+      `${isFullLine ? "" : "<br>"}<blockquote>${text}</blockquote>${isFullLine ? "" : "<br>"}`
     );
+
     onClose();
   });
 
